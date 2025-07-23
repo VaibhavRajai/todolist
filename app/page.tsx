@@ -12,6 +12,7 @@ interface FormErrors {
   username?: string;
   password?: string;
   confirmPassword?: string;
+  general?: string;
 }
 
 const AuthPage: React.FC = () => {
@@ -56,19 +57,64 @@ const AuthPage: React.FC = () => {
     if (errors[name as keyof FormErrors]) {
       setErrors(prev => ({ ...prev, [name]: undefined }));
     }
+    // Clear general error when user starts typing
+    if (errors.general) {
+      setErrors(prev => ({ ...prev, general: undefined }));
+    }
   };
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
     setIsLoading(true);
-    
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    console.log(isLogin ? 'Login' : 'Signup', formData);
-    alert(`${isLogin ? 'Login' : 'Signup'} successful!`);
-    
-    setIsLoading(false);
+    setErrors({});
+
+    try {
+      const endpoint = isLogin 
+        ? 'https://todolist-be-1.onrender.com/api/login'
+        : 'https://todolist-be-1.onrender.com/api/signup';
+
+      const requestBody = {
+        username: formData.username,
+        password: formData.password
+      };
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+  
+        if (data.token) {
+          localStorage.setItem('authToken', data.token);
+          localStorage.setItem('username', formData.username);
+        }
+        setFormData({
+          username: '',
+          password: '',
+          confirmPassword: ''
+        });    
+        console.log('Auth successful:', data);
+        window.location.href = '/home';
+      } else {
+        setErrors({
+          general: data.message || `${isLogin ? 'Login' : 'Signup'} failed. Please try again.`
+        });
+      }
+    } catch (error) {
+      console.error('Auth error:', error);
+      setErrors({
+        general: 'Network error. Please check your connection and try again.'
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const toggleMode = () => {
@@ -100,6 +146,12 @@ const AuthPage: React.FC = () => {
         </div>
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
           <div className="space-y-6">
+            {errors.general && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                {errors.general}
+              </div>
+            )}
+            
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
                 Username
@@ -122,6 +174,7 @@ const AuthPage: React.FC = () => {
                 <p className="mt-1 text-sm text-red-600">{errors.username}</p>
               )}
             </div>
+            
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Password
@@ -151,6 +204,7 @@ const AuthPage: React.FC = () => {
                 <p className="mt-1 text-sm text-red-600">{errors.password}</p>
               )}
             </div>
+            
             {!isLogin && (
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
@@ -182,6 +236,7 @@ const AuthPage: React.FC = () => {
                 )}
               </div>
             )}
+            
             <button
               type="button"
               onClick={handleSubmit}
@@ -195,6 +250,7 @@ const AuthPage: React.FC = () => {
               )}
             </button>
           </div>
+          
           <div className="mt-6 text-center">
             <p className="text-gray-600">
               {isLogin ? "Don't have an account? " : "Already have an account? "}
@@ -208,7 +264,6 @@ const AuthPage: React.FC = () => {
             </p>
           </div>
         </div>
-     
       </div>
     </div>
   );
