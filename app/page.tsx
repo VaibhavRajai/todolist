@@ -1,7 +1,7 @@
 "use client"
 import React, { useState } from 'react';
 import { Eye, EyeOff, User, Lock, Mail } from 'lucide-react';
-
+ import { useEffect } from "react";
 interface FormData {
   username: string;
   password: string;
@@ -16,6 +16,15 @@ interface FormErrors {
 }
 
 const AuthPage: React.FC = () => {
+ 
+
+useEffect(() => {
+  const token = localStorage.getItem("authToken");
+  if (token) {
+    window.location.href='/home';
+  }
+}, []);
+
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
