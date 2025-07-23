@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
@@ -58,7 +58,11 @@ const translations = {
     status: 'Status',
     active: 'Active',
     completedTasks: 'Completed Tasks',
-    pendingTasks: 'Pending Tasks'
+    pendingTasks: 'Pending Tasks',
+    loginRequired: 'Login Required',
+    pleaseLogin: 'Please login to access this page',
+    redirectingToLogin: 'Redirecting to login page...',
+    logout: 'Logout'
   },
   hi: {
     taskApp: 'टास्क ऐप',
@@ -95,7 +99,11 @@ const translations = {
     status: 'स्थिति',
     active: 'सक्रिय',
     completedTasks: 'पूर्ण टास्क',
-    pendingTasks: 'लंबित टास्क'
+    pendingTasks: 'लंबित टास्क',
+    loginRequired: 'लॉगिन आवश्यक',
+    pleaseLogin: 'इस पेज तक पहुंचने के लिए कृपया लॉगिन करें',
+    redirectingToLogin: 'लॉगिन पेज पर रीडायरेक्ट कर रहे हैं...',
+    logout: 'लॉगआउट'
   }
 };
 
@@ -138,6 +146,66 @@ const store = configureStore({
 
 type RootState = ReturnType<typeof store.getState>;
 
+// Authentication check component
+const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const language = useSelector((state: RootState) => state.tasks.language);
+  const t = translations[language];
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+        // Redirect to login page after a short delay
+        setTimeout(() => {
+          window.location.href = '/'; // Assuming your login page is at root
+        }, 2000);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  if (isAuthenticated === null) {
+    // Loading state
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-md p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    // Not authenticated - show login required message
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-md p-8 text-center max-w-md w-full mx-4">
+          <div className="mb-6">
+            <svg className="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">{t.loginRequired}</h2>
+            <p className="text-gray-600 mb-4">{t.pleaseLogin}</p>
+            <p className="text-sm text-gray-500">{t.redirectingToLogin}</p>
+          </div>
+          <div className="animate-pulse bg-gray-200 h-2 rounded-full">
+            <div className="bg-blue-500 h-2 rounded-full" style={{ width: '60%' }}></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Authenticated - render children
+  return <>{children}</>;
+};
+
 const LanguageSwitcher: React.FC = () => {
   const dispatch = useDispatch();
   const language = useSelector((state: RootState) => state.tasks.language);
@@ -173,6 +241,12 @@ const Navigation: React.FC<{ activeTab: string; setActiveTab: (tab: string) => v
   const language = useSelector((state: RootState) => state.tasks.language);
   const t = translations[language];
   
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('username');
+    window.location.href = '/'; // Redirect to login page
+  };
+  
   const navItems = [
     { name: t.home, id: 'home' },
     { name: t.history, id: 'history' },
@@ -201,6 +275,12 @@ const Navigation: React.FC<{ activeTab: string; setActiveTab: (tab: string) => v
               </button>
             ))}
             <LanguageSwitcher />
+            <button
+              onClick={handleLogout}
+              className="px-3 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
+            >
+              {t.logout}
+            </button>
           </div>
           <div className="md:hidden flex items-center space-x-2">
             <LanguageSwitcher />
@@ -237,6 +317,12 @@ const Navigation: React.FC<{ activeTab: string; setActiveTab: (tab: string) => v
                   {item.name}
                 </button>
               ))}
+              <button
+                onClick={handleLogout}
+                className="block w-full text-left px-3 py-2 bg-red-600 text-white rounded-md text-base font-medium hover:bg-red-700 transition-colors"
+              >
+                {t.logout}
+              </button>
             </div>
           </div>
         )}
@@ -476,6 +562,14 @@ const ProfileTab: React.FC = () => {
   const tasks = useSelector((state: RootState) => state.tasks.tasks);
   const language = useSelector((state: RootState) => state.tasks.language);
   const t = translations[language];
+  const [username, setUsername] = useState('');
+  
+  useEffect(() => {
+    const storedUsername = localStorage.getItem('username');
+    if (storedUsername) {
+      setUsername(storedUsername);
+    }
+  }, []);
   
   const getTotalTasks = () => tasks.length;
   const getCompletedTasks = () => tasks.filter(task => task.isCompleted).length;
@@ -547,7 +641,7 @@ const ProfileTab: React.FC = () => {
               <h3 className="text-lg font-medium text-gray-900">{t.pendingTasks}</h3>
               <p className="text-3xl font-bold text-orange-600">{getPendingTasks()}</p>
             </div>
-          </div>
+            </div>
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-6">
@@ -555,7 +649,7 @@ const ProfileTab: React.FC = () => {
             <div className="flex-shrink-0">
               <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
             </div>
@@ -571,7 +665,7 @@ const ProfileTab: React.FC = () => {
             <div className="flex-shrink-0">
               <div className="w-12 h-12 bg-indigo-500 rounded-lg flex items-center justify-center">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </div>
             </div>
@@ -587,20 +681,20 @@ const ProfileTab: React.FC = () => {
         <h2 className="text-xl font-semibold text-gray-800 mb-4">{t.userInformation}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t.name}</label>
-            <p className="text-lg text-gray-900">John Doe</p>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t.name}</label>
+            <p className="text-lg text-gray-900">{username || 'User'}</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t.email}</label>
-            <p className="text-lg text-gray-900">john.doe@example.com</p>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t.email}</label>
+            <p className="text-lg text-gray-900">user@example.com</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t.memberSince}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t.memberSince}</label>
             <p className="text-lg text-gray-900">January 2024</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t.status}</label>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t.status}</label>
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
               {t.active}
             </span>
           </div>
@@ -610,10 +704,10 @@ const ProfileTab: React.FC = () => {
   );
 };
 
-const App: React.FC = () => {
+const TaskApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
-
-  const renderContent = () => {
+  
+  const renderActiveTab = () => {
     switch (activeTab) {
       case 'home':
         return <HomeTab />;
@@ -627,21 +721,23 @@ const App: React.FC = () => {
   };
   
   return (
-    <div className="min-h-screen bg-gray-100">
-      <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {renderContent()}
-      </main>
-    </div>
+    <AuthGuard>
+      <div className="min-h-screen bg-gray-100">
+        <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
+        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 px-4">
+          {renderActiveTab()}
+        </main>
+      </div>
+    </AuthGuard>
   );
 };
 
-const Home: React.FC = () => {
+const App: React.FC = () => {
   return (
     <Provider store={store}>
-      <App />
+      <TaskApp />
     </Provider>
   );
 };
 
-export default Home;
+export default App;
