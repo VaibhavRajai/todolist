@@ -16,6 +16,8 @@ A simple and secure To-Do list application with multilingual support and task in
   - ➕ Add new tasks
   - ✏️ Update existing tasks
   - ❌ Remove tasks
+  - 🕘 History
+  
 
 - 📊 **Insights**
   - Visualize task statistics (e.g., completed, pending)
