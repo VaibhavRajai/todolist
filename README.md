@@ -23,7 +23,6 @@ A simple and secure To-Do list application with multilingual support and task in
   - Visualize task statistics (e.g., completed, pending)
   - Understand your productivity trends over time
 
-## 📸 Screenshots
 
 <!-- You can insert images here if needed -->
 <!-- ![Login Page](screenshots/login.png) -->
