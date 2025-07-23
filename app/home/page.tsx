@@ -3,36 +3,133 @@ import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
+
 interface Task {
   id: string;
   name: string;
   createdAt: string;
+  taskDueDate: string;
+  isCompleted: boolean;
 }
 
 interface TaskState {
   tasks: Task[];
+  language: 'en' | 'hi';
 }
+
 const initialState: TaskState = {
   tasks: [],
+  language: 'en',
 };
+
+const translations = {
+  en: {
+    taskApp: 'TaskApp',
+    home: 'Home',
+    history: 'History',
+    profile: 'Profile',
+    taskManager: 'Task Manager',
+    // organizeEfficiently: 'Organize your tasks efficiently with our simple task management system',
+    addNewTask: 'Add New Task',
+    enterTaskName: 'Enter task name...',
+    addTask: 'Add Task',
+    allTasks: 'All Tasks',
+    noTasksYet: 'No tasks added yet',
+    addFirstTask: 'Add your first task using the form above',
+    dueDate: 'Due Date',
+    created: 'Created',
+    done: 'Done',
+    delete: 'Delete',
+    taskHistory: 'Task History',
+    viewAllTasks: 'View all your tasks and their creation timeline',
+    taskTimeline: 'Task Timeline',
+    total: 'total',
+    noHistoryAvailable: 'No task history available',
+    startAddingTasks: 'Start by adding some tasks on the home page',
+    userProfile: 'User Profile',
+    taskStatistics: 'Your task management statistics and information',
+    totalTasks: 'Total Tasks',
+    today: 'Today',
+    thisWeek: 'This Week',
+    userInformation: 'User Information',
+    name: 'Name',
+    email: 'Email',
+    memberSince: 'Member Since',
+    status: 'Status',
+    active: 'Active',
+    completedTasks: 'Completed Tasks',
+    pendingTasks: 'Pending Tasks'
+  },
+  hi: {
+    taskApp: 'टास्क ऐप',
+    home: 'होम',
+    history: 'इतिहास',
+    profile: 'प्रोफाइल',
+    taskManager: 'टास्क मैनेजर',
+    // organizeEfficiently: 'हमारे सरल टास्क मैनेजमेंट सिस्टम के साथ अपने कार्यों को कुशलता से व्यवस्थित करें',
+    addNewTask: 'नया टास्क जोड़ें',
+    enterTaskName: 'टास्क का नाम दर्ज करें...',
+    addTask: 'टास्क जोड़ें',
+    allTasks: 'सभी टास्क',
+    noTasksYet: 'अभी तक कोई टास्क नहीं जोड़ा गया',
+    addFirstTask: 'ऊपर दिए गए फॉर्म का उपयोग करके अपना पहला टास्क जोड़ें',
+    dueDate: 'देय तिथि',
+    created: 'बनाया गया',
+    done: 'पूर्ण',
+    delete: 'हटाएं',
+    taskHistory: 'टास्क इतिहास',
+    viewAllTasks: 'अपने सभी टास्क और उनकी निर्माण समयरेखा देखें',
+    taskTimeline: 'टास्क समयरेखा',
+    total: 'कुल',
+    noHistoryAvailable: 'कोई टास्क इतिहास उपलब्ध नहीं',
+    startAddingTasks: 'होम पेज पर कुछ टास्क जोड़कर शुरुआत करें',
+    userProfile: 'उपयोगकर्ता प्रोफाइल',
+    taskStatistics: 'आपकी टास्क मैनेजमेंट की आंकड़े और जानकारी',
+    totalTasks: 'कुल टास्क',
+    today: 'आज',
+    thisWeek: 'इस सप्ताह',
+    userInformation: 'उपयोगकर्ता जानकारी',
+    name: 'नाम',
+    email: 'ईमेल',
+    memberSince: 'सदस्य बने',
+    status: 'स्थिति',
+    active: 'सक्रिय',
+    completedTasks: 'पूर्ण टास्क',
+    pendingTasks: 'लंबित टास्क'
+  }
+};
+
 const taskSlice = createSlice({
   name: 'tasks',
   initialState,
   reducers: {
-    addTask: (state, action: PayloadAction<string>) => {
+    addTask: (state, action: PayloadAction<{ name: string; dueDate: string }>) => {
       const newTask: Task = {
         id: Date.now().toString(),
-        name: action.payload,
+        name: action.payload.name,
         createdAt: new Date().toISOString(),
+        taskDueDate: action.payload.dueDate,
+        isCompleted: false,
       };
       state.tasks.push(newTask);
     },
     removeTask: (state, action: PayloadAction<string>) => {
       state.tasks = state.tasks.filter(task => task.id !== action.payload);
     },
+    toggleTaskCompletion: (state, action: PayloadAction<string>) => {
+      const task = state.tasks.find(task => task.id === action.payload);
+      if (task) {
+        task.isCompleted = !task.isCompleted;
+      }
+    },
+    setLanguage: (state, action: PayloadAction<'en' | 'hi'>) => {
+      state.language = action.payload;
+    },
   },
 });
-const { addTask, removeTask } = taskSlice.actions;
+
+const { addTask, removeTask, toggleTaskCompletion, setLanguage } = taskSlice.actions;
+
 const store = configureStore({
   reducer: {
     tasks: taskSlice.reducer,
@@ -40,19 +137,54 @@ const store = configureStore({
 });
 
 type RootState = ReturnType<typeof store.getState>;
+
+const LanguageSwitcher: React.FC = () => {
+  const dispatch = useDispatch();
+  const language = useSelector((state: RootState) => state.tasks.language);
+
+  return (
+    <div className="flex items-center space-x-2">
+      <button
+        onClick={() => dispatch(setLanguage('en'))}
+        className={`px-3 py-1 text-sm rounded ${
+          language === 'en'
+            ? 'bg-blue-700 text-white'
+            : 'text-blue-100 hover:bg-blue-500'
+        }`}
+      >
+        EN
+      </button>
+      <button
+        onClick={() => dispatch(setLanguage('hi'))}
+        className={`px-3 py-1 text-sm rounded ${
+          language === 'hi'
+            ? 'bg-blue-700 text-white'
+            : 'text-blue-100 hover:bg-blue-500'
+        }`}
+      >
+        हिं
+      </button>
+    </div>
+  );
+};
+
 const Navigation: React.FC<{ activeTab: string; setActiveTab: (tab: string) => void }> = ({ activeTab, setActiveTab }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const language = useSelector((state: RootState) => state.tasks.language);
+  const t = translations[language];
+  
   const navItems = [
-    { name: 'Home', id: 'home' },
-    { name: 'History', id: 'history' },
-    { name: 'Profile', id: 'profile' },
+    { name: t.home, id: 'home' },
+    { name: t.history, id: 'history' },
+    { name: t.profile, id: 'profile' },
   ];
+  
   return (
     <nav className="bg-blue-600 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <h1 className="text-white text-xl font-bold">TaskApp</h1>
+            <h1 className="text-white text-xl font-bold">{t.taskApp}</h1>
           </div>
           <div className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => (
@@ -68,8 +200,10 @@ const Navigation: React.FC<{ activeTab: string; setActiveTab: (tab: string) => v
                 {item.name}
               </button>
             ))}
+            <LanguageSwitcher />
           </div>
-          <div className="md:hidden flex items-center">
+          <div className="md:hidden flex items-center space-x-2">
+            <LanguageSwitcher />
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="text-blue-100 hover:text-white focus:outline-none focus:text-white"
@@ -110,46 +244,70 @@ const Navigation: React.FC<{ activeTab: string; setActiveTab: (tab: string) => v
     </nav>
   );
 };
+
 const TaskForm: React.FC = () => {
   const [taskName, setTaskName] = useState('');
+  const [taskDate, setTaskDate] = useState('');
   const dispatch = useDispatch();
+  const language = useSelector((state: RootState) => state.tasks.language);
+  const t = translations[language];
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (taskName.trim()) {
-      dispatch(addTask(taskName.trim()));
+    if (taskName.trim() && taskDate) {
+      dispatch(addTask({ name: taskName.trim(), dueDate: taskDate }));
       setTaskName('');
+      setTaskDate('');
     }
   };
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">Add New Task</h2>
+      <h2 className="text-xl font-semibold text-gray-800 mb-4">{t.addNewTask}</h2>
       <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4">
         <input
           type="text"
           value={taskName}
           onChange={(e) => setTaskName(e.target.value)}
-          placeholder="Enter task name..."
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+          placeholder={t.enterTaskName}
+          className="flex-1 px-4 text-gray-700 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+          required
+        />
+        <input
+          type="date"
+          value={taskDate}
+          onChange={(e) => setTaskDate(e.target.value)}
+          min={new Date().toISOString().split("T")[0]} 
+          className="flex-1 px-4 text-gray-700 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
           required
         />
         <button
           type="submit"
           className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium"
         >
-          Add Task
+          {t.addTask}
         </button>
       </form>
     </div>
   );
 };
+
 const TaskList: React.FC = () => {
   const tasks = useSelector((state: RootState) => state.tasks.tasks);
+  const language = useSelector((state: RootState) => state.tasks.language);
+  const t = translations[language];
   const dispatch = useDispatch();
-const handleRemoveTask = (taskId: string) => {
+
+  const handleRemoveTask = (taskId: string) => {
     dispatch(removeTask(taskId));
   };
+
+  const handleToggleTask = (taskId: string) => {
+    dispatch(toggleTaskCompletion(taskId));
+  };
+
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -157,35 +315,63 @@ const handleRemoveTask = (taskId: string) => {
       minute: '2-digit',
     });
   };
+
+  const formatDueDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">
-        All Tasks ({tasks.length})
+        {t.allTasks} ({tasks.length})
       </h2>    
       {tasks.length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-gray-500 text-lg">No tasks added yet</p>
-          <p className="text-gray-400 text-sm mt-2">Add your first task using the form above</p>
+          <p className="text-gray-500 text-lg">{t.noTasksYet}</p>
+          <p className="text-gray-400 text-sm mt-2">{t.addFirstTask}</p>
         </div>
       ) : (
         <div className="space-y-3">
           {tasks.map((task) => (
             <div
               key={task.id}
-              className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className={`flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors ${
+                task.isCompleted ? 'bg-green-50 border-green-200' : ''
+              }`}
             >
               <div className="flex-1">
-                <h3 className="text-lg font-medium text-gray-800">{task.name}</h3>
+                <h3 className={`text-lg font-medium ${task.isCompleted ? 'text-green-800 line-through' : 'text-gray-800'}`}>
+                  {task.name}
+                </h3>
+                <h3 className={`text-lg font-medium ${task.isCompleted ? 'text-green-600' : 'text-gray-800'}`}>
+                  {t.dueDate}: {formatDueDate(task.taskDueDate)}
+                </h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  Created: {formatDate(task.createdAt)}
+                  {t.created}: {formatDate(task.createdAt)}
                 </p>
               </div>
-              <button
-                onClick={() => handleRemoveTask(task.id)}
-                className="ml-4 px-3 py-1 bg-red-100 text-red-600 rounded-md hover:bg-red-200 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors text-sm font-medium"
-              >
-                Delete
-              </button>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => handleToggleTask(task.id)}
+                  className={`px-3 py-1 rounded-md focus:ring-2 focus:ring-offset-2 transition-colors text-sm font-medium ${
+                    task.isCompleted
+                      ? 'bg-green-200 text-green-800 hover:bg-green-300 focus:ring-green-500'
+                      : 'bg-green-100 text-green-700 hover:bg-green-200 focus:ring-green-500'
+                  }`}
+                >
+                  {t.done}
+                </button>
+                <button
+                  onClick={() => handleRemoveTask(task.id)}
+                  className="px-3 py-1 bg-red-100 text-red-600 rounded-md hover:bg-red-200 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors text-sm font-medium"
+                >
+                  {t.delete}
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -193,13 +379,17 @@ const handleRemoveTask = (taskId: string) => {
     </div>
   );
 };
+
 const HomeTab: React.FC = () => {
+  const language = useSelector((state: RootState) => state.tasks.language);
+  const t = translations[language];
+  
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Task Manager</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">{t.taskManager}</h1>
         <p className="text-lg text-gray-600">
-          Organize your tasks efficiently with our simple task management system
+          {/* {t.organizeEfficiently} */}
         </p>
       </div>
       
@@ -208,10 +398,14 @@ const HomeTab: React.FC = () => {
     </div>
   );
 };
+
 const HistoryTab: React.FC = () => {
   const tasks = useSelector((state: RootState) => state.tasks.tasks);
+  const language = useSelector((state: RootState) => state.tasks.language);
+  const t = translations[language];
+  
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -219,22 +413,23 @@ const HistoryTab: React.FC = () => {
       minute: '2-digit',
     });
   };
+  
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Task History</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">{t.taskHistory}</h1>
         <p className="text-lg text-gray-600">
-          View all your tasks and their creation timeline
+          {t.viewAllTasks}
         </p>
       </div>
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">
-          Task Timeline ({tasks.length} total)
+          {t.taskTimeline} ({tasks.length} {t.total})
         </h2>      
         {tasks.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-gray-500 text-lg">No task history available</p>
-            <p className="text-gray-400 text-sm mt-2">Start by adding some tasks on the home page</p>
+            <p className="text-gray-500 text-lg">{t.noHistoryAvailable}</p>
+            <p className="text-gray-400 text-sm mt-2">{t.startAddingTasks}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -244,16 +439,29 @@ const HistoryTab: React.FC = () => {
               .map((task, index) => (
                 <div
                   key={task.id}
-                  className="flex items-start space-x-4 p-4 border-l-4 border-blue-500 bg-blue-50 rounded-r-lg"
+                  className={`flex items-start space-x-4 p-4 border-l-4 rounded-r-lg ${
+                    task.isCompleted 
+                      ? 'border-green-500 bg-green-50' 
+                      : 'border-blue-500 bg-blue-50'
+                  }`}
                 >
-                  <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                  <div className={`flex-shrink-0 w-8 h-8 text-white rounded-full flex items-center justify-center text-sm font-medium ${
+                    task.isCompleted ? 'bg-green-500' : 'bg-blue-500'
+                  }`}>
                     {index + 1}
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-medium text-gray-800">{task.name}</h3>
+                    <h3 className={`text-lg font-medium ${task.isCompleted ? 'text-green-800 line-through' : 'text-gray-800'}`}>
+                      {task.name}
+                    </h3>
                     <p className="text-sm text-gray-600 mt-1">
-                      Created on {formatDate(task.createdAt)}
+                      {t.created} {formatDate(task.createdAt)}
                     </p>
+                    {task.isCompleted && (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-2">
+                        {t.done}
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
@@ -263,24 +471,33 @@ const HistoryTab: React.FC = () => {
     </div>
   );
 };
+
 const ProfileTab: React.FC = () => {
   const tasks = useSelector((state: RootState) => state.tasks.tasks);
+  const language = useSelector((state: RootState) => state.tasks.language);
+  const t = translations[language];
+  
   const getTotalTasks = () => tasks.length;
+  const getCompletedTasks = () => tasks.filter(task => task.isCompleted).length;
+  const getPendingTasks = () => tasks.filter(task => !task.isCompleted).length;
+  
   const getTasksToday = () => {
     const today = new Date().toDateString();
     return tasks.filter(task => new Date(task.createdAt).toDateString() === today).length;
   };
+  
   const getTasksThisWeek = () => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     return tasks.filter(task => new Date(task.createdAt) >= oneWeekAgo).length;
   };
+  
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">User Profile</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">{t.userProfile}</h1>
         <p className="text-lg text-gray-600">
-          Your task management statistics and information
+          {t.taskStatistics}
         </p>
       </div>
 
@@ -295,7 +512,7 @@ const ProfileTab: React.FC = () => {
               </div>
             </div>
             <div className="ml-4">
-              <h3 className="text-lg font-medium text-gray-900">Total Tasks</h3>
+              <h3 className="text-lg font-medium text-gray-900">{t.totalTasks}</h3>
               <p className="text-3xl font-bold text-blue-600">{getTotalTasks()}</p>
             </div>
           </div>
@@ -306,13 +523,29 @@ const ProfileTab: React.FC = () => {
             <div className="flex-shrink-0">
               <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+            <div className="ml-4">
+              <h3 className="text-lg font-medium text-gray-900">{t.completedTasks}</h3>
+              <p className="text-3xl font-bold text-green-600">{getCompletedTasks()}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
             </div>
             <div className="ml-4">
-              <h3 className="text-lg font-medium text-gray-900">Today</h3>
-              <p className="text-3xl font-bold text-green-600">{getTasksToday()}</p>
+              <h3 className="text-lg font-medium text-gray-900">{t.pendingTasks}</h3>
+              <p className="text-3xl font-bold text-orange-600">{getPendingTasks()}</p>
             </div>
           </div>
         </div>
@@ -322,37 +555,53 @@ const ProfileTab: React.FC = () => {
             <div className="flex-shrink-0">
               <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+            <div className="ml-4">
+              <h3 className="text-lg font-medium text-gray-900">{t.today}</h3>
+              <p className="text-3xl font-bold text-purple-600">{getTasksToday()}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-12 h-12 bg-indigo-500 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
             </div>
             <div className="ml-4">
-              <h3 className="text-lg font-medium text-gray-900">This Week</h3>
-              <p className="text-3xl font-bold text-purple-600">{getTasksThisWeek()}</p>
+              <h3 className="text-lg font-medium text-gray-900">{t.thisWeek}</h3>
+              <p className="text-3xl font-bold text-indigo-600">{getTasksThisWeek()}</p>
             </div>
           </div>
         </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">User Information</h2>
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">{t.userInformation}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t.name}</label>
             <p className="text-lg text-gray-900">John Doe</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t.email}</label>
             <p className="text-lg text-gray-900">john.doe@example.com</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Member Since</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t.memberSince}</label>
             <p className="text-lg text-gray-900">January 2024</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t.status}</label>
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              Active
+              {t.active}
             </span>
           </div>
         </div>
@@ -376,6 +625,7 @@ const App: React.FC = () => {
         return <HomeTab />;
     }
   };
+  
   return (
     <div className="min-h-screen bg-gray-100">
       <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -385,7 +635,8 @@ const App: React.FC = () => {
     </div>
   );
 };
-const TaskManagementApp: React.FC = () => {
+
+const Home: React.FC = () => {
   return (
     <Provider store={store}>
       <App />
@@ -393,4 +644,4 @@ const TaskManagementApp: React.FC = () => {
   );
 };
 
-export default TaskManagementApp;
+export default Home;
