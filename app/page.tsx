@@ -57,7 +57,6 @@ const AuthPage: React.FC = () => {
     if (errors[name as keyof FormErrors]) {
       setErrors(prev => ({ ...prev, [name]: undefined }));
     }
-    // Clear general error when user starts typing
     if (errors.general) {
       setErrors(prev => ({ ...prev, general: undefined }));
     }
