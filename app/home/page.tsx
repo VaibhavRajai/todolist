@@ -678,29 +678,7 @@ const ProfileTab: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">{t.userInformation}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t.name}</label>
-            <p className="text-lg text-gray-900">{username || 'User'}</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t.email}</label>
-            <p className="text-lg text-gray-900">user@example.com</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t.memberSince}</label>
-            <p className="text-lg text-gray-900">January 2024</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t.status}</label>
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              {t.active}
-            </span>
-          </div>
-        </div>
-      </div>
+  
     </div>
   );
 };
